@@ -16,6 +16,31 @@
 
 local isLockpickActive = false
 
+-- real base-game animation: crouched, hands working on something (used
+-- widely across the FiveM community specifically for lockpicking)
+local ANIM_DICT = "anim@amb@clubhouse@tutorial@bkr_tut_ig3@"
+local ANIM_CLIP = "machinic_loop_mechandplayer"
+
+local function playLockpickAnim()
+    local ped = PlayerPedId()
+
+    RequestAnimDict(ANIM_DICT)
+    local attempts = 0
+    while not HasAnimDictLoaded(ANIM_DICT) and attempts < 100 do
+        Wait(10)
+        attempts = attempts + 1
+    end
+
+    if HasAnimDictLoaded(ANIM_DICT) then
+        TaskPlayAnim(ped, ANIM_DICT, ANIM_CLIP, 8.0, -8.0, -1, 1, 0, false, false, false)
+    end
+end
+
+local function stopLockpickAnim()
+    local ped = PlayerPedId()
+    StopAnimTask(ped, ANIM_DICT, ANIM_CLIP, 1.0)
+end
+
 -- difficulty -> ring shrink time (ms) and hit window (ms)
 local function getDifficultyParams(difficulty)
     difficulty = math.max(1, math.min(10, difficulty or 5))
@@ -39,6 +64,7 @@ local function StartLockpick(opts, cb)
 
     isLockpickActive = true
     SetNuiFocus(true, true)
+    CreateThread(playLockpickAnim)
 
     SendNUIMessage({
         action = "startGame",
@@ -55,6 +81,7 @@ local function StartLockpick(opts, cb)
             nuiCb('ok')
             isLockpickActive = false
             SetNuiFocus(false, false)
+            stopLockpickAnim()
             p:resolve(data.success == true)
         end)
 
@@ -69,6 +96,7 @@ exports('StartLockpick', StartLockpick)
 RegisterNUICallback('closeUI', function(data, cb)
     isLockpickActive = false
     SetNuiFocus(false, false)
+    stopLockpickAnim()
     cb('ok')
 end)
 
