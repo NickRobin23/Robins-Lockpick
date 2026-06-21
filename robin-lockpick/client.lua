@@ -16,8 +16,6 @@
 
 local isLockpickActive = false
 
--- real base-game animation: crouched, hands working on something (used
--- widely across the FiveM community specifically for lockpicking)
 local ANIM_DICT = "anim@amb@clubhouse@tutorial@bkr_tut_ig3@"
 local ANIM_CLIP = "machinic_loop_mechandplayer"
 
@@ -91,6 +89,26 @@ local function StartLockpick(opts, cb)
 end
 
 exports('StartLockpick', StartLockpick)
+
+if Config.Inventory == 'qb' then
+    RegisterNetEvent('robins-lockpick:client:use', function()
+        StartLockpick({ difficulty = Config.ItemDifficulty, circles = Config.ItemCircles }, function(success)
+            TriggerServerEvent('robins-lockpick:server:result', success)
+        end)
+    end)
+end
+
+if Config.Inventory == 'ox' then
+    exports('UseLockpickItem', function(data, slot)
+        exports.ox_inventory:useItem(data, function(verified)
+            if not verified then return end
+
+            StartLockpick({ difficulty = Config.ItemDifficulty, circles = Config.ItemCircles }, function(success)
+                TriggerServerEvent('robins-lockpick:server:result', success)
+            end)
+        end)
+    end)
+end
 
 -- lets the NUI release focus on cancel (e.g. ESC)
 RegisterNUICallback('closeUI', function(data, cb)

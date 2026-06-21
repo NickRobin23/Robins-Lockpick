@@ -8,6 +8,9 @@ An osu!-style lockpicking minigame for FiveM. Circles appear one at a time with 
 
 - Approach-ring timing mechanic, similar to osu!'s clicking gameplay
 - Adjustable difficulty (1–10) and circle count per call
+- Plays a real lockpicking animation on the player for the duration of the minigame, stopping automatically on success, failure, or cancel
+- Optional "lockpick" item support for **ox_inventory** or **qb-inventory/qbx_core**, picked via `config.lua`
+- Configurable chance for the lockpick to break (and be removed) on a failed attempt — never removed on success
 - Transparent background — renders only the circles over the game world, nothing else
 - Works standalone in a browser for quick UI testing, with no FiveM client needed
 - No on-screen text, titles, or progress counters — just the circles
@@ -57,6 +60,60 @@ end)
 
 A hit is valid from the start of the hit window up until **0.5 seconds** after the ring fully closes. Anything later is a miss.
 
+## Inventory integration ("lockpick" item)
+
+Open `config.lua` and set which inventory you're using:
+
+```lua
+Config.Inventory = 'qb'    -- 'qb', 'ox', or 'none'
+Config.BreakChance = 0.25  -- chance the lockpick breaks on a FAILED attempt
+Config.ItemDifficulty = 5  -- difficulty used when the item is used
+Config.ItemCircles = 5     -- circle count used when the item is used
+```
+
+The lockpick is **never** removed on a successful pick. On a failed pick, there's a `Config.BreakChance` chance (25% by default) that it breaks and is removed from the player's inventory — otherwise they keep it and can try again.
+
+You still need to register the `lockpick` item itself in your inventory's own item file — this resource only handles the use logic and break chance, not item registration.
+
+### ox_inventory
+
+Set `Config.Inventory = 'ox'`, then add to `ox_inventory/data/items.lua`:
+
+```lua
+['lockpick'] = {
+    label = 'Lockpick',
+    weight = 100,
+    stack = true,
+    close = true,
+    consume = 0,
+    client = {
+        export = 'robins-lockpick.UseLockpickItem',
+    },
+},
+```
+
+`consume = 0` is important — this resource handles removing the item itself (only on a failed break roll), so ox_inventory shouldn't auto-consume it on every use.
+
+### qb-inventory / qbx_core
+
+Set `Config.Inventory = 'qb'`, then add to `qb-core/shared/items.lua` (or your QBox items config):
+
+```lua
+['lockpick'] = {
+    ['name'] = 'lockpick',
+    ['label'] = 'Lockpick',
+    ['weight'] = 100,
+    ['type'] = 'item',
+    ['image'] = 'lockpick.png',
+    ['unique'] = false,
+    ['useable'] = true,
+    ['shouldClose'] = true,
+    ['description'] = 'A set of tools for picking locks',
+},
+```
+
+This resource registers `lockpick` as a usable item automatically and only removes it from the player's inventory if the break roll hits on a failed attempt.
+
 ## Testing
 
 A chat command is included for quick in-game testing:
@@ -74,7 +131,9 @@ You can also open `html/index.html` directly in a browser (no FiveM required) to
 ```
 robins-lockpick/
 ├── fxmanifest.lua
-├── client.lua          -- export, difficulty curve, NUI lifecycle
+├── config.lua           -- inventory choice, break chance, item difficulty
+├── client.lua            -- export, difficulty curve, NUI lifecycle, anim, inventory hooks
+├── server.lua            -- item registration + break-on-fail logic
 └── html/
     ├── index.html
     ├── style.css        -- circle/ring styling, transparent background
