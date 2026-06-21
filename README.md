@@ -15,7 +15,9 @@ An osu!-style lockpicking minigame for FiveM. Circles appear one at a time with 
 - Works standalone in a browser for quick UI testing, with no FiveM client needed
 
 ## Preview
-![Preview](https://cdn.discordapp.com/attachments/696092449323483167/1518342355684425959/Screenshot_2026-06-21_at_3.50.09_PM.png?ex=6a399203&is=6a384083&hm=bd5b6d58d94400562791368d080055cd120c6be46619f297cbab1712a9e321e5&)
+<p align="center">
+  <img src="https://cdn.discordapp.com/attachments/696092449323483167/1518342355684425959/Screenshot_2026-06-21_at_3.50.09_PM.png?ex=6a399203&is=6a384083&hm=bd5b6d58d94400562791368d080055cd120c6be46619f297cbab1712a9e321e5&" width="600" alt="Lockpick minigame preview">
+</p>
 
 ## Installation
 
