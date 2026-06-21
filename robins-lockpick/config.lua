@@ -4,7 +4,7 @@ Config = {}
 -- Options: 'qb'   -> qb-inventory / qbx_core
 --          'ox'   -> ox_inventory
 --          'none' -> no item integration, use the export directly
-Config.Inventory = 'ox'
+Config.Inventory = 'none'
 
 -- Chance (0.0 - 1.0) that the lockpick breaks and is removed from the
 -- player's inventory when the minigame is FAILED. On success the lockpick is never removed.
