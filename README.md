@@ -13,7 +13,6 @@ An osu!-style lockpicking minigame for FiveM. Circles appear one at a time with 
 - Configurable chance for the lockpick to break (and be removed) on a failed attempt — never removed on success
 - Transparent background — renders only the circles over the game world, nothing else
 - Works standalone in a browser for quick UI testing, with no FiveM client needed
-- No on-screen text, titles, or progress counters — just the circles
 
 ## Installation
 
