@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>robins-lockpick</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="game"></div>
+
+    <!-- standalone test controls, hidden automatically when running inside FiveM -->
+    <div id="devPanel">
+        <div class="devRow">
+            <label>Circles</label>
+            <input type="number" id="devCircles" value="5" min="1" max="30">
+        </div>
+        <div class="devRow">
+            <label>Difficulty (1-10)</label>
+            <input type="number" id="devDifficulty" value="5" min="1" max="10">
+        </div>
+        <button id="devStart">Start Test</button>
+        <div id="devResult"></div>
+    </div>
+
+<script src="script.js"></script>
+</body>
+</html>
