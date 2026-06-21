@@ -8,9 +8,8 @@ An osu!-style lockpicking minigame for FiveM. Circles appear one at a time with 
 
 - Approach-ring timing mechanic, similar to osu!'s clicking gameplay
 - Adjustable difficulty (1–10) and circle count per call
-- Transparent background — renders only the circles over the game world, nothing else
+- Transparent background - renders only the circles over the game world, nothing else
 - Works standalone in a browser for quick UI testing, with no FiveM client needed
-- No on-screen text, titles, or progress counters — just the circles
 
 ## Installation
 
