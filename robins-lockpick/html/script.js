@@ -35,15 +35,31 @@
     const APPROACH_START_SCALE = 2.4; // ring starting size, as a multiple of CIRCLE_SIZE
     const EDGE_PADDING = 110;         // keep circles off the extreme edges/HUD
     const RIGHT_ZONE_START = 0.55;    // circles only spawn from this % of screen width onward
+    const STAGGER_RATIO = 0.45;       // new circle spawns after this fraction of shrinkTime, so several overlap on screen at once
 
-    function randomPosition() {
+    function randomPosition(avoid) {
         const w = window.innerWidth;
         const h = window.innerHeight;
         const topSafe = 110;
+        const minSeparation = CIRCLE_SIZE * 1.4; // keep simultaneous circles from overlapping
 
         const zoneLeft = Math.max(EDGE_PADDING, w * RIGHT_ZONE_START);
         const zoneRight = w - EDGE_PADDING;
 
+        for (let attempt = 0; attempt < 20; attempt++) {
+            const x = zoneLeft + Math.random() * Math.max(0, zoneRight - zoneLeft);
+            const y = topSafe + Math.random() * (h - topSafe - EDGE_PADDING);
+
+            const tooClose = (avoid || []).some((p) => {
+                const dx = x - p.x;
+                const dy = y - p.y;
+                return Math.sqrt(dx * dx + dy * dy) < minSeparation;
+            });
+
+            if (!tooClose) return { x, y };
+        }
+
+        // fallback: couldn't find a clear spot after enough tries, just use the last one
         const x = zoneLeft + Math.random() * Math.max(0, zoneRight - zoneLeft);
         const y = topSafe + Math.random() * (h - topSafe - EDGE_PADDING);
         return { x, y };
@@ -54,6 +70,10 @@
     }
 
     function endGame(success) {
+        if (state) {
+            clearTimeout(state.spawnTimer);
+            state.activeCircles.forEach((c) => clearTimeout(c.missTimer));
+        }
         state = null;
         clearBoard();
         reportResult(success);
@@ -65,9 +85,17 @@
     }
 
     function spawnCircle(index, total) {
-        if (!state) return;
+        if (!state || state.gameOver) return;
 
-        const pos = randomPosition();
+        // schedule the next circle to appear before this one even resolves,
+        // so several are visible on screen at once with staggered timings
+        if (index + 1 < total) {
+            state.spawnTimer = setTimeout(() => {
+                spawnCircle(index + 1, total);
+            }, state.shrinkTime * STAGGER_RATIO);
+        }
+
+        const pos = randomPosition(state.activeCircles.map((c) => c.pos));
 
         const wrap = document.createElement('div');
         wrap.className = 'circleWrap';
@@ -105,13 +133,12 @@
         const perfectTime = spawnTime + state.shrinkTime;
 
         const circleData = {
-            wrap, target, ring,
-            pos,
+            wrap, target, ring, pos,
             perfectTime,
             resolved: false
         };
 
-        state.activeCircle = circleData;
+        state.activeCircles.push(circleData);
 
         // fail once the post-closure grace period has fully elapsed without
         // a click — matches CLOSED_GRACE_MS in handleGlobalClick plus a
@@ -130,10 +157,16 @@
         circleData.resolved = true;
         clearTimeout(circleData.missTimer);
 
+        const idx = state.activeCircles.indexOf(circleData);
+        if (idx !== -1) state.activeCircles.splice(idx, 1);
+
         circleData.wrap.classList.add(success ? 'hit' : 'miss');
 
         if (!success) {
-            // hold the red outline for a beat before ending the game
+            // freeze the game immediately: no more spawns, no more clicks
+            // register, while the red outline holds before teardown
+            state.gameOver = true;
+            clearTimeout(state.spawnTimer);
             setTimeout(() => endGame(false), MISS_HOLD_MS);
             return;
         }
@@ -145,25 +178,41 @@
         }, 260);
 
         state.completed += 1;
-        state.activeCircle = null;
 
         if (state.completed >= state.totalCircles) {
             endGame(true);
-        } else {
-            spawnCircle(state.completed, state.totalCircles);
         }
     }
 
     function handleGlobalClick(e) {
-        if (!state || !state.activeCircle) return;
+        if (!state || state.gameOver || state.activeCircles.length === 0) return;
         if (e.target.closest && e.target.closest('#devPanel')) return;
 
-        const circleData = state.activeCircle;
+        const clickX = e.clientX;
+        const clickY = e.clientY;
+        const clickRadius = CIRCLE_SIZE / 2; // must land within the visible target circle
+
+        // find the closest active circle whose target circle is actually under the click
+        let best = null;
+        let bestDist = Infinity;
+
+        for (const circleData of state.activeCircles) {
+            const dx = clickX - circleData.pos.x;
+            const dy = clickY - circleData.pos.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist <= clickRadius && dist < bestDist) {
+                best = circleData;
+                bestDist = dist;
+            }
+        }
+
+        if (!best) return; // clicked empty space, no circle affected
 
         // Read the ring's actual current rendered size instead of trusting
         // a separate JS timer for the "still closing" case — this avoids
         // clock-vs-paint drift right at the perfect moment.
-        const ringRect = circleData.ring.getBoundingClientRect();
+        const ringRect = best.ring.getBoundingClientRect();
         const ringSize = ringRect.width;
         const remaining = ringSize - CIRCLE_SIZE; // px still left to shrink
 
@@ -173,15 +222,15 @@
             const pxPerMs = totalShrinkPx / state.shrinkTime;
             const windowPx = state.hitWindow * pxPerMs;
 
-            resolveCircle(circleData, remaining <= windowPx);
+            resolveCircle(best, remaining <= windowPx);
             return;
         }
 
         // ring has already fully closed — clicks within this window after
         // closure still count as a perfect hit
-        const msSinceClosed = performance.now() - circleData.perfectTime;
+        const msSinceClosed = performance.now() - best.perfectTime;
         const CLOSED_GRACE_MS = 500;
-        resolveCircle(circleData, msSinceClosed <= CLOSED_GRACE_MS);
+        resolveCircle(best, msSinceClosed <= CLOSED_GRACE_MS);
     }
 
     function handleGlobalKey(e) {
@@ -205,7 +254,8 @@
             completed: 0,
             shrinkTime,
             hitWindow,
-            activeCircle: null
+            activeCircles: [],
+            spawnTimer: null
         };
 
         spawnCircle(0, circleCount);
