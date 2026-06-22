@@ -7,8 +7,15 @@
     const gameEl = document.getElementById('game');
     const devPanel = document.getElementById('devPanel');
     const devResult = document.getElementById('devResult');
+    const cursorReticle = document.getElementById('cursorReticle');
 
     let state = null; // current game state, null when idle
+
+    // keep the reticle following the mouse smoothly, but only ever
+    // visible while a game is actually running
+    document.addEventListener('mousemove', (e) => {
+        cursorReticle.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+    });
 
     // sends a result back to client.lua (no-op log when running standalone)
     function postToLua(eventName, data) {
@@ -77,6 +84,9 @@
         state = null;
         clearBoard();
         reportResult(success);
+
+        document.body.classList.remove('game-active');
+        cursorReticle.classList.remove('visible');
 
         if (!isFiveM) {
             devResult.textContent = success ? 'Result: SUCCESS' : 'Result: FAIL';
@@ -257,6 +267,9 @@
             activeCircles: [],
             spawnTimer: null
         };
+
+        document.body.classList.add('game-active');
+        cursorReticle.classList.add('visible');
 
         spawnCircle(0, circleCount);
     }

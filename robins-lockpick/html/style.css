@@ -26,6 +26,32 @@ body.standalone-preview {
     height: 100%;
 }
 
+/* custom cursor reticle: small ring that follows the mouse while the
+   game is running, replacing the OS cursor */
+#cursorReticle {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #8fef3e;
+    box-shadow: 0 0 6px rgba(143, 239, 62, 0.6);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 150ms ease-out;
+    z-index: 9999;
+}
+
+#cursorReticle.visible {
+    opacity: 1;
+}
+
+body.game-active {
+    cursor: none;
+}
+
 /* ---------- circle + approach ring ---------- */
 
 .circleWrap {
